@@ -1,6 +1,3 @@
-import sys
-import os
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from flask_jwt_extended import create_access_token
 from models.data_models import User
 from data_manager.db import db
@@ -16,6 +13,13 @@ class UserDataManager():
         else:
             raise ValueError("User and password didnt mact to a record in db")
     
+    def get_user_by_id(self, user_id):
+        user_in_db = User.query.get(user_id)
+        if not user_in_db:
+            raise ValueError("No such user in db")
+        return user_in_db
+
+
     def get_user_token(self, username, password):
         user_in_db = User.query.filter_by(username=username).first()
 
@@ -24,6 +28,7 @@ class UserDataManager():
             return acces_token
         else:
             raise ValueError("User and password didnt mact to a record in db")
+
 
     def create_user(self, user_data):
         #Checks if usernae or email already exists
@@ -45,9 +50,36 @@ class UserDataManager():
             print(f"Fehler beim Hinzufügen des Benutzers: {e}")
 
         return True 
+    
+    def user_has_campaign(self, user_id, campaign_id):
+        user_in_db = User.query.get(user_id)
+        if not user_in_db:
+            raise ValueError("User didn´t exist")
+        
+        # Checks if campaign.id exist in user campaigns
+        for campaign in user_in_db.campaigns:
+            if campaign.id == campaign_id:
+                return True
+        
+        return False
 
-    def update_user(self):
-        pass
 
-    def delete_user(self):
-        pass
+    def update_user(self, user_id, user_data):
+        user_in_db = User.query.get(user_id)
+        if not user_in_db:
+            raise ValueError("User didn´t exist")
+            
+        for key, value in user_data.items():
+            if hasattr(user_in_db, key):
+                setattr(user_in_db, key, value)
+
+        # committ changes
+        db.session.commit()
+
+    def delete_user(self, user_id):
+        user_in_db = User.query.get(user_id)
+        if not user_in_db:
+            raise ValueError("User didn´t exist")
+        
+        # delete record
+        db.session.delete(user_in_db)

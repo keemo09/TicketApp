@@ -1,8 +1,8 @@
-from models.data_models import Campaign, User, Ticket
+from models.data_models import Campaign, User, Ticket, Prize
 from data_manager.db import db
 
 class CampaignDataManager():
-    def create_campaign(user_id, campaign_data):
+    def create_campaign(self, user_id, campaign_data):
         # Checks if Campaignname alreaddy exists
         existing_campaign = Campaign.query.filter_by(name=campaign_data["name"]).first()
         if existing_campaign:
@@ -21,26 +21,122 @@ class CampaignDataManager():
         except Exception as e:
             db.session.rollback()
             print(f"Fehler beim Hinzufügen des Benutzers: {e}")
+        
+        return new_campaign
 
     def update_campaign(campaign_id, campaign_data):
-        pass
-    def delete_campaign(self):
-        pass
+        # Check if campaign is valid
+        campaign_in_db = Campaign.query.get(campaign_id)
+        if not campaign_in_db:
+            raise ValueError("Campaign didn´t exists") 
+        
+        # Checks with filds are given and update it
+        if "name" in campaign_data:
+            campaign_in_db.name = campaign_data["name"]
+        elif "active" in campaign_data:
+            campaign_in_db.active = campaign_data["active"]
+        elif "end_date" in campaign_data:
+            campaign_in_db.end_date = campaign_data["end_date"]
+        
+        # committ changes
+        db.session.commit()
 
-    def add_ticket(self, campaign_id):
+        
+
+    def delete_campaign(self, campaign_id):
+        # Check if campaign is valid
+        campaign_in_db = Campaign.query.get(campaign_id)
+        if not campaign_in_db:
+            raise ValueError("Campaign didn´t exists") 
+        
+        # Delete record
+        db.session.delete(campaign_in_db)
+    
+    def get_tickets(self, campaign_id):
+        # Check if campaign is valid
+        campaign_in_db = Campaign.query.get(campaign_id)
+        if not campaign_in_db:
+            raise ValueError("Campaign didn´t exists") 
+        
+        availible_tickets_id = []
+        for ticket in campaign_in_db.tickets:
+            if ticket.user_id is None:  # Prüfe, ob kein Benutzer dem Ticket zugeordnet ist
+                availible_tickets_id.append(ticket.id)
+
+        return availible_tickets_id
+
+
+
+
+    def add_ticket(self, campaign_id, number_of_tickets=1):
+        # Check if campaign is valid
+        existing_campaign = Campaign.query.get(campaign_id)
+        if not existing_campaign:
+            raise ValueError("Campaign didn´t exists")
+        
+        # Create a new Ticket record
+        tickets = [Ticket(campaign_id=campaign_id) for _ in range(number_of_tickets)]
+        try:
+            db.session.bulk_save_objects(tickets)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {"error": f"Error adding tickets: {e}"}, 500
+
+    def updtate_ticket(self, ticket_id, ticket_data):
+        ticket_in_db = User.query.get(ticket_id)
+        if not ticket_in_db:
+            raise ValueError("User didn´t exist")
+            
+        for key, value in ticket_data.items():
+            if hasattr(ticket_in_db, key):
+                setattr(ticket_in_db, key, value)
+
+
+    def add_price(self,campaign_id, price_data):
         # Check if campaign is valid
         existing_campaign = Campaign.query.filter_by(id=campaign_id)
         if not existing_campaign:
             raise ValueError("Campaign didn´t exists")
         
-        # Create a new Ticket record
-        new_ticket = Ticket(campaign_id=campaign_id)
+        # Create new prize record
+        new_price = Prize(campaign_id=campaign_id, **price_data)
         try:
-            db.session.add(new_ticket)
+            db.session.add(new_price)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"Error by adduing a ticket: {e}")
+            print(f"Fehler beim Hinzufügen des Benutzers: {e}")
+    
+    def update_price(self, prize_id, price_data):
+        # Check if prize is valid
+        prize_in_db = Prize.query.get(prize_id)
+        if not prize_in_db:
+            raise ValueError("Campaign didn´t exists") 
+        
+        # Checks with filds are given and update it
+        if "winner_ticket_id" in price_data:
+            prize_in_db.winner_ticket_id = price_data["name"]
+        elif "product_name" in price_data:
+            prize_in_db.product_name = price_data["active"]
+        elif "product_description" in price_data:
+            prize_in_db.product_description = price_data["end_date"]
+        
+        # committ changes
+        db.session.commit()
+        
+    def delete_prize(self, prize_id):
+        # Check if campaign is valid
+        prize_in_db = Prize.query.get(prize_id)
+        if not prize_in_db:
+            raise ValueError("Campaign didn´t exists") 
+        
+        # delete record
+        db.session.delete(prize_in_db)
+
+
+
+
 
         
     # def add_price_to_campaign(self, campaign_id, price_data):
