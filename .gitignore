@@ -1,2 +1,11 @@
+# Virtual environment
 .venv
-**/__pycache__/
+
+# Ignore __pycache__ directories
+__pycache__/
+
+# Ignore all .pyc files
+*.pyc
+
+# Ignore SQLite database file
+instance/app.db
