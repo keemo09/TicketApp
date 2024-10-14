@@ -83,3 +83,32 @@ class UserDataManager():
         
         # delete record
         db.session.delete(user_in_db)
+    
+    def get_user_tickets(self, user_id):
+        user_in_db = User.query.get(user_id)
+        if not user_id:
+            raise ValueError("User didnt exists")
+        
+        user_tickets_data = []
+        for ticket in user_in_db.tickets:
+            campaign = ticket.campaign
+            prize = ticket.prize
+
+            if prize:
+                winner_ticket = True
+                prize_name = prize.product_name
+            else:
+                winner_ticket = False
+                prize_name = "None"
+
+            ticket_data = {
+                "ticket_id": ticket.id, 
+                "campaign_name": campaign.name, 
+                "campaign_end_date": campaign.end_date,
+                "winner_ticket": winner_ticket,
+                "prize": prize_name
+            }
+
+            user_tickets_data.append(ticket_data)
+        return user_tickets_data
+        

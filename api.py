@@ -123,7 +123,7 @@ def create_campaign():
         #campaign_data_manager.add_ticket(new_campaign.id, validated_data["ticket_count"])
         for prize_data in validated_data["prizes"]:
             campaign_data_manager.add_price(user_id, prize_data)
-        return jsonify({"msg": "User successfilly registeres"}), 201
+        return jsonify({"msg": "Campaign successfilly created"}), 201
     except ValueError:
         return jsonify({'message': ' Error while creating Campaign'}), 401
 
@@ -158,11 +158,22 @@ def delete_campaign(campaign_id):
 def get_ticket(campaign_id):
     user_id = get_jwt_identity()
     try:
-        tickets = campaign_data_manager.add_ticket(campaign_id, user_id)
-        return jsonify({'message': 'Ticket Success'})
+        pdb.set_trace()
+        campaign_data_manager.add_ticket(campaign_id, user_id)
+        return jsonify({'message': 'Ticket ordered'})
     except ValueError:
         return jsonify({'message': 'Failed gaining a ticket'}), 401
 
+
+@app.route('/api/user/tickets')
+@jwt_required()
+def check_tickets():
+    user_id = get_jwt_identity()
+    try:
+        ticket_dict = user_data_manager.get_user_tickets(user_id)
+        return jsonify(ticket_dict)
+    except ValueError:
+        return jsonify({'message': 'Failed fetch ticket data for speciffic user'}), 401
 
 
 

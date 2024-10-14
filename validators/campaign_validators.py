@@ -8,7 +8,7 @@ class PrizeSchema(Schema):
 class CampaignSchema(Schema):
     name = fields.Str(required=True, error_messages={"required": "Name of campaign is required."})
     end_date = fields.DateTime(required=True, error_messages={"required": "end_date is required."})
-    max_ticket = fields.Int(required=True, error_messages={"required": "ticket_count is required."})
+    max_ticket = fields.Int(required=True, error_messages={"required": "max_ticket is required."})
 
     # Nestet validation
     prizes = fields.List(fields.Nested(PrizeSchema), required=True, error_messages={"required": "Prizes are required."})

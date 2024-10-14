@@ -20,7 +20,7 @@ class CampaignDataManager():
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"Fehler beim Hinzufügen des Benutzers: {e}")
+            raise 
         
         return new_campaign
 
@@ -68,20 +68,32 @@ class CampaignDataManager():
 
 
 
-    def add_ticket(self, campaign_id, number_of_tickets=1):
+    def add_ticket(self, campaign_id, user_id):
+        #!!! Change that only ticket creeate if user get one 
         # Check if campaign is valid
         existing_campaign = Campaign.query.get(campaign_id)
         if not existing_campaign:
             raise ValueError("Campaign didn´t exists")
         
+        existing_cuser = Campaign.query.get(user_id)
+        if not existing_cuser:
+            raise ValueError("User didn´t exists")
+        
+#        tickets_in_db = Ticket.query.filter_by(campaign_id=campaign_id).all()
+
+#        if number_of_tickets > (existing_campaign.max_ticket - len(tickets_in_db)):
+#            raise ValueError("No more tickets")
+
         # Create a new Ticket record
-        tickets = [Ticket(campaign_id=campaign_id) for _ in range(number_of_tickets)]
-        try:
-            db.session.bulk_save_objects(tickets)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            return {"error": f"Error adding tickets: {e}"}, 500
+#        tickets = [Ticket(campaign_id=campaign_id, user_id=user_id) for _ in range(number_of_tickets)]
+        ticket = Ticket(campaign_id=campaign_id, user_id=user_id)
+#        pdb.set_trace()
+ #       try:
+        db.session.add(ticket)
+        db.session.commit()
+#        except Exception as e:
+#            db.session.rollback()
+##            raise 
 
     def updtate_ticket(self, ticket_id, ticket_data):
         ticket_in_db = User.query.get(ticket_id)
@@ -106,7 +118,7 @@ class CampaignDataManager():
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"Fehler beim Hinzufügen des Benutzers: {e}")
+            raise 
     
     def update_price(self, prize_id, price_data):
         # Check if prize is valid
@@ -123,7 +135,11 @@ class CampaignDataManager():
             prize_in_db.product_description = price_data["end_date"]
         
         # committ changes
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise 
         
     def delete_prize(self, prize_id):
         # Check if campaign is valid
