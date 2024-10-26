@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_apscheduler import APScheduler
 from data_manager.db import db
 from data_manager.user_data_manager import UserDataManager
 from data_manager.campaign_data_manager import CampaignDataManager
@@ -7,21 +8,30 @@ from config import Config
 from models.data_models import User
 from validators.campaign_validators import CampaignSchema
 from marshmallow import ValidationError
-from random import randint
-
+from job_scheduler import setup_jobs  # Stelle sicher, dass `setup_jobs` importiert ist
 
 app = Flask(__name__)
 
-# Load config.py and set the configuration
+# Konfiguration laden
 app.config.from_object(Config)
 
-# Initialisiere SQLAlchemy mit der Flask-App
+# Initialisierung der Datenbank und JWT
 db.init_app(app)
-with app.app_context():
-    db.create_all()
-
-# JWT Initialization
 jwt = JWTManager(app)
+
+# Scheduler-Instanz erstellen und zur App hinzufügen
+scheduler = APScheduler()
+scheduler.init_app(app)
+
+# Einmaligen Anwendungskontext öffnen
+with app.app_context():
+    db.create_all()  # Tabellen erstellen
+    setup_jobs(scheduler, app)  # Geplante Jobs hinzufügen
+    print("Scheduler jobs set up completed.")  # Debugging-Print
+    scheduler.start()  # Scheduler starten, nachdem Jobs hinzugefügt wurden
+    print("Scheduler started.")  # Debugging-Print
+
+
 
 # data manager
 user_data_manager = UserDataManager()
@@ -53,7 +63,7 @@ def register():
     try:
         new_user = user_data_manager.create_user(user_data)
     except ValueError():
-        pass
+        return jsonify({'message': 'User already exists'}), 401
 
     return jsonify({"msg": "User successfilly registeres"}), 201
 
@@ -122,7 +132,7 @@ def create_campaign():
         new_campaign = campaign_data_manager.create_campaign(user_id, campaign_data)
         #campaign_data_manager.add_ticket(new_campaign.id, validated_data["ticket_count"])
         for prize_data in validated_data["prizes"]:
-            campaign_data_manager.add_price(user_id, prize_data)
+            campaign_data_manager.add_price(new_campaign.id, prize_data)
         return jsonify({"msg": "Campaign successfilly created"}), 201
     except ValueError:
         return jsonify({'message': ' Error while creating Campaign'}), 401
@@ -158,7 +168,6 @@ def delete_campaign(campaign_id):
 def get_ticket(campaign_id):
     user_id = get_jwt_identity()
     try:
-        pdb.set_trace()
         campaign_data_manager.add_ticket(campaign_id, user_id)
         return jsonify({'message': 'Ticket ordered'})
     except ValueError:
@@ -176,7 +185,6 @@ def check_tickets():
         return jsonify({'message': 'Failed fetch ticket data for speciffic user'}), 401
 
 
-
 @app.route('/protected', methods=["POST"])
 @jwt_required()
 def protected():
@@ -190,8 +198,8 @@ def protected():
         return jsonify({'message': 'User not found'}), 404
     
 
-#if __name__ == "__main__":
-#   app.run(debug=True, host="0.0.0.0", port=5002)
-
 if __name__ == "__main__":
-    app.run()
+  app.run(debug=True, host="0.0.0.0", port=5002)
+
+#if __name__ == "__main__":
+#    app.run()

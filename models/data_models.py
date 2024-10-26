@@ -63,7 +63,7 @@ class Prize(db.Model):
     __tablename__ = "prizes"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True) 
     campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"), nullable=False)
-    winner_ticket_id = db.Column(db.Integer, db.ForeignKey("tickets.id"), unique=True, nullable=True)
+    winner_ticket_id = db.Column(db.Integer, db.ForeignKey("tickets.id"), nullable=True)
     #product_id = db.Column(db.Integer, db.ForeignKey("products.id"), unique=True, nullable=True)
     product_name = db.Column(db.String, nullable=False)
     product_description = db.Column(db.Text, nullable=True)
