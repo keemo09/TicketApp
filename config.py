@@ -7,3 +7,17 @@ class Config:
     JWT_SECRET_KEY = '7e2deaa768d57e626e48049ae10a368a3e31535060d075b4c2f783dcca0e138a'
     JWT_TOKEN_LOCATION = ['headers']
     SCHEDULER_API_ENABLED = True 
+    SWAGGER = {
+        'title': 'Your API',
+        'swagger': "2.0",
+        'uiversion': 3,
+        'securityDefinitions': {
+            'Bearer': {
+                'type': 'apiKey',
+                'name': 'Authorization',
+                'in': 'header',
+                'description': 'JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"'
+            }
+        },
+        'security': [{'Bearer': []}]  
+    }
