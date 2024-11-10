@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from config import Config
 from models.data_models import User
 from validators.campaign_validators import CampaignSchema
+from validators.user_validators import LoginSchema, RegisterSchema
 from marshmallow import ValidationError
 from job_scheduler import setup_jobs  
 from flasgger import Swagger
@@ -15,18 +16,18 @@ from flasgger import Swagger
 app = Flask(__name__)
 
 
-SWAGGER_TEMPLATE = {
-     'securityDefinitions': {
-        'bearerAuth': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header',
-            'description': 'Enter your bearer token in the format **Bearer &lt;token&gt;**'
-        }
-    }
-}
+# SWAGGER_TEMPLATE = {
+#      'securityDefinitions': {
+#         'bearerAuth': {
+#             'type': 'apiKey',
+#             'name': 'Authorization',
+#             'in': 'header',
+#             'description': 'Enter your bearer token in the format **Bearer &lt;token&gt;**'
+#         }
+#     }
+# }
 
-swagger = Swagger(app, template=SWAGGER_TEMPLATE)
+swagger = Swagger(app, template=Config.SWAGGER_TEMPLATE)
 
 # Load Config
 app.config.from_object(Config)
@@ -103,14 +104,23 @@ def login():
     Gets a dict as POST in the format {“username”: ..., “password”: ...}. 
     Then calls the method get_user_token from data_manager which returns a jwt token and returns a token in the header.
     '''
+    # Create Instance of CampaignSchema
+    campaign_schema = LoginSchema()
+
     # Fetches the data from the user
     user_data = request.get_json()
     username = user_data["username"]
     password = user_data["password"]
+
+    try:
+        # validate the data
+        validated_data = campaign_schema.load(user_data)
+    except ValidationError as err:
+        return jsonify(err.messages), 400
     
     try:
         # Creates a JWT token and return a succesmesage and the JWT Token.
-        acces_token = user_data_manager.get_user_token(username, password)
+        acces_token = user_data_manager.get_user_token(validated_data["username"], validated_data["password"])
         return jsonify({'message': 'Login Success', 'access_token': acces_token})
 
     except ValueError:
@@ -184,16 +194,26 @@ def register():
     Gets a dict as POST in the format {“username”: ..., “password”: ..., “email”: ...}. 
     Then calls the method create_user from data_manager which creates a new User record.
     '''
+    # Create Instance of CampaignSchema
+    campaign_schema = RegisterSchema()
+
     # Fetches the user data in json format
     user_data = request.get_json()
 
     try:
-        #  Create a new User record
-        user_data_manager.create_user(user_data)
+    # validate the data
+        validated_data = campaign_schema.load(user_data)
+    except ValidationError as err:
+        return jsonify(err.messages), 400
 
-    except ValueError:
+
+    try:
+        #  Create a new User record
+        user_data_manager.create_user(validated_data)
+
+    except ValueError  as e:
         #  Returns a error message if the username already exist
-        return jsonify({'message': 'User already exists'}), 401
+        return jsonify({'message': str(e)}), 401
 
     # Returns succes message
     return jsonify({"msg": "User successfilly registered"}), 201
@@ -204,7 +224,7 @@ def register():
 def update_user():
     """
     Update Userdata for a logged-in User
-    ---
+    --- 
     security:
         - bearerAuth: ['Authorization'] 
     parameters:
@@ -284,7 +304,7 @@ def update_user():
 
 @app.route('/api/user', methods=["DELETE"])
 @jwt_required()
-def delete_user(user_id):
+def delete_user():
     """
     Delete a logged-in User
     ---
@@ -320,6 +340,8 @@ def delete_user(user_id):
     '''
     Calls the method delete_user from data_manager which deletes a User record.
     '''
+    user_id = get_jwt_identity()
+
     try:
         # Delete a User record
         user_data_manager.delete_user(user_id)
@@ -327,7 +349,7 @@ def delete_user(user_id):
         pass
 
     # Return succes message
-    return jsonify({"msg": "User successfilly registeres"}), 201
+    return jsonify({"msg": "User successfilly updated"}), 201
 
 
 @app.route('/api/campaign/new', methods=["POST"])
@@ -336,6 +358,8 @@ def create_campaign():
     """
     Create a new campaign.
     ---
+    security:
+        - bearerAuth: ['Authorization'] 
     parameters:
       - name: campaign
         in: body
@@ -418,13 +442,11 @@ def create_campaign():
     # Create Instance of CampaignSchema
     campaign_schema = CampaignSchema()
 
-    try:
-        # Fetches the data from body and extract user identity from JWT token.
-        user_id = get_jwt_identity()
-        user = user_data_manager.get_user_by_id(user_id)
 
-    except ValueError as e:
-        return jsonify({'message': 'Login Failed'}), 401
+    # Fetches the data from body and extract user identity from JWT token.
+    user_id = get_jwt_identity()
+    user = user_data_manager.get_user_by_id(user_id)
+
 
 
     try:
@@ -453,6 +475,8 @@ def update_campaign(campaign_id):
     """
     Update an existing campaign.
     ---
+    security:
+        - bearerAuth: ['Authorization'] 
     parameters:
       - name: campaign
         in: body
@@ -533,6 +557,8 @@ def delete_campaign(campaign_id):
     """
     Delete an existing campaign.
     ---
+    security:
+        - bearerAuth: ['Authorization'] 
     parameters:
       - name: campaign_id
         in: path
@@ -596,6 +622,8 @@ def get_ticket(campaign_id):
     """
     Gain a Ticket.
     ---
+    security:
+        - bearerAuth: ['Authorization'] 
     parameters:
       - name: campaign_id
         in: path
@@ -654,6 +682,8 @@ def check_tickets():
     """
     Gain a Ticket for a campaign.
     ---
+    security:
+        - bearerAuth: ['Authorization'] 
     parameters:
       - name: campaign_id
         in: path
