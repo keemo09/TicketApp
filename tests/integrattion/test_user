@@ -1,0 +1,11 @@
+def test_create_user(client):
+    # 1. Create User
+    create_response = client.post(
+        "/users/register",
+        json={"username": "testuser", "email": "testuser@example.com", "password": "securepassword"}
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["username"] == "testuser"
+    assert create_response.json()["email"] == "testuser@example.com"
+
+
