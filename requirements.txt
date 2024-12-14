@@ -214,5 +214,4 @@ websockets==10.4
 Werkzeug==3.0.3
 wrapt==1.12.1
 wsproto==1.2.0
-xformers==0.0.23.dev686
 yarl==1.9.4
