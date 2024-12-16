@@ -1,4 +1,4 @@
-DATABASE_URI = 'sqlite:///app.db'
+DATABASE_URI = 'postgresql://ticketappsql_user:T8WyJ8x66RDG8cPIQedmO3eYp9tBmfex@dpg-ctg7lat6l47c73d8r4sg-a/ticketappsql'
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
